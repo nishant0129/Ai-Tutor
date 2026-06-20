@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
+      // Keep saved sessions across logins, but clear the current conversation state.
       clearAITutorStorage(currentUserKey);
       setUser(null);
     }

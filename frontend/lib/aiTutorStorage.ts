@@ -11,15 +11,18 @@ export function getPersistedKey(baseKey: string, userKey?: string) {
   return userKey ? `${baseKey}-${userKey}` : baseKey;
 }
 
-export function clearAITutorStorage(userKey?: string) {
+export function clearAITutorStorage(userKey?: string, options?: { clearSessions?: boolean }) {
   if (typeof window === "undefined") return;
 
   const keys = [
     getPersistedKey(AI_TUTOR_CHAT_KEY, userKey),
     getPersistedKey(AI_TUTOR_RESPONSE_KEY, userKey),
     getPersistedKey(AI_TUTOR_MODE_KEY, userKey),
-    getPersistedKey(AI_TUTOR_SESSIONS_KEY, userKey),
   ];
+
+  if (options?.clearSessions) {
+    keys.push(getPersistedKey(AI_TUTOR_SESSIONS_KEY, userKey));
+  }
 
   keys.forEach((key) => window.localStorage.removeItem(key));
 }
