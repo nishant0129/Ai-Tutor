@@ -1,34 +1,81 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-
-const STORAGE_KEY = "career-portal-resume-builder";
+import { useAuth } from "../../components/AuthContext";
 
 export default function ResumeBuilderPage() {
+  const { loading, user } = useAuth();
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [skills, setSkills] = useState("");
   const [experience, setExperience] = useState("");
+  const [status, setStatus] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setName(parsed.name || "");
-      setTitle(parsed.title || "");
-      setSummary(parsed.summary || "");
-      setSkills(parsed.skills || "");
-      setExperience(parsed.experience || "");
+    if (loading || !user) return;
+
+    async function loadResume() {
+      const response = await fetch("/api/resume", {
+        credentials: "include",
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.resume) {
+        setName(data.resume.name || "");
+        setTitle(data.resume.title || "");
+        setSummary(data.resume.summary || "");
+        setSkills(data.resume.skills || "");
+        setExperience(data.resume.experience || "");
+      }
     }
-  }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ name, title, summary, skills, experience })
+    loadResume();
+  }, [loading, user]);
+
+  const saveResume = async () => {
+    setMessage("");
+    const response = await fetch("/api/resume", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, title, summary, skills, experience }),
+    });
+
+    if (!response.ok) {
+      setMessage("Unable to save resume. Please log in and try again.");
+      return;
+    }
+
+    setMessage("Resume saved successfully.");
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-6xl px-4 py-10 text-center">Loading your resume…</div>
+      </main>
     );
-  }, [name, title, summary, skills, experience]);
+  }
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-3xl font-semibold">Save your resume draft to your account</h1>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">
+            Log in to keep your resume draft available anytime you return.
+          </p>
+          <Link href="/login" className="mt-6 inline-flex rounded-full bg-blue-600 px-6 py-3 text-white">
+            Log in
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -42,7 +89,16 @@ export default function ResumeBuilderPage() {
 
         <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-semibold">Resume details</h2>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold">Resume details</h2>
+              <button
+                type="button"
+                onClick={saveResume}
+                className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+              >
+                Save resume
+              </button>
+            </div>
             <div className="mt-5 space-y-4">
               <input
                 value={name}
@@ -78,6 +134,7 @@ export default function ResumeBuilderPage() {
                 className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
             </div>
+            {message && <p className="mt-4 text-sm text-green-600 dark:text-green-400">{message}</p>}
           </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

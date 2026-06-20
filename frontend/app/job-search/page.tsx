@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../components/AuthContext";
 
 type JobItem = {
   id: string;
@@ -9,41 +11,76 @@ type JobItem = {
   status: string;
 };
 
-const STORAGE_KEY = "career-portal-job-search";
-
 export default function JobSearchPage() {
+  const { loading, user } = useAuth();
   const [items, setItems] = useState<JobItem[]>([]);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("Applied");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setItems(JSON.parse(saved));
+    if (loading || !user) return;
+
+    async function loadJobs() {
+      const response = await fetch("/api/job-search", {
+        credentials: "include",
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      setItems(data.jobs ?? []);
     }
-  }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    loadJobs();
+  }, [loading, user]);
 
-  const addItem = () => {
+  const addItem = async () => {
     if (!company || !role) return;
+    setError("");
 
-    setItems((current) => [
-      {
-        id: Date.now().toString(),
-        company,
-        role,
-        status,
-      },
-      ...current,
-    ]);
+    const response = await fetch("/api/job-search", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company, role, status }),
+    });
+
+    if (!response.ok) {
+      setError("Unable to save this role. Please make sure you are logged in.");
+      return;
+    }
+
+    const data = await response.json();
+    setItems((current) => [data.job, ...current]);
     setCompany("");
     setRole("");
     setStatus("Applied");
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-6xl px-4 py-10 text-center">Loading your job tracker…</div>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-3xl font-semibold">Save your job applications to your account</h1>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">
+            Log in to track roles, update stages, and keep your application history across sessions.
+          </p>
+          <Link href="/login" className="mt-6 inline-flex rounded-full bg-blue-600 px-6 py-3 text-white">
+            Log in
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -89,6 +126,7 @@ export default function JobSearchPage() {
                 >
                   Track job
                 </button>
+                {error && <p className="text-sm text-red-600">{error}</p>}
               </div>
             </div>
 

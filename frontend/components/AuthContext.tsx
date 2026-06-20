@@ -12,60 +12,91 @@ type AuthContextType = {
   loading: boolean;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const USERS_KEY = "ai-tutor-users";
-const CURRENT_KEY = "ai-tutor-current-user";
-
-function getSavedUsers() {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CURRENT_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+    async function loadCurrentUser() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Unable to load current user:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    loadCurrentUser();
   }, []);
 
   const register = async (username: string, email: string, password: string) => {
-    const users = getSavedUsers();
-    if (users.find((u: any) => u.email === email)) return false;
-    users.push({ username, email, password });
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    localStorage.setItem(CURRENT_KEY, JSON.stringify({ username, email }));
-    setUser({ username, email });
-    return true;
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      return true;
+    } catch (error) {
+      console.error("Registration failed:", error);
+      return false;
+    }
   };
 
   const login = async (email: string, password: string) => {
-    const users = getSavedUsers();
-    const found = users.find((u: any) => u.email === email && u.password === password);
-    if (!found) return false;
-    localStorage.setItem(CURRENT_KEY, JSON.stringify({ username: found.username, email }));
-    setUser({ username: found.username, email });
-    return true;
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      return true;
+    } catch (error) {
+      console.error("Login failed:", error);
+      return false;
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem(CURRENT_KEY);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (

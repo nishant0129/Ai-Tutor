@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../components/AuthContext";
 
 type InterviewItem = {
   id: string;
@@ -10,49 +12,93 @@ type InterviewItem = {
   status: string;
 };
 
-const STORAGE_KEY = "career-portal-interview-tracker";
-
 export default function InterviewTrackerPage() {
+  const { loading, user } = useAuth();
   const [items, setItems] = useState<InterviewItem[]>([]);
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [date, setDate] = useState("");
   const [status, setStatus] = useState("Planned");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setItems(JSON.parse(saved));
+    if (loading || !user) return;
+
+    async function loadInterviews() {
+      const response = await fetch("/api/interview-tracker", {
+        credentials: "include",
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      setItems(data.interviews ?? []);
     }
-  }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    loadInterviews();
+  }, [loading, user]);
 
-  const addItem = () => {
+  const addItem = async () => {
     if (!company || !role || !date) return;
-    const next: InterviewItem = {
-      id: Date.now().toString(),
-      company,
-      role,
-      date,
-      status,
-    };
-    setItems((current) => [next, ...current]);
+    setError("");
+
+    const response = await fetch("/api/interview-tracker", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company, role, date, status }),
+    });
+
+    if (!response.ok) {
+      setError("Unable to save the interview. Please log in again.");
+      return;
+    }
+
+    const data = await response.json();
+    setItems((current) => [data.interview, ...current]);
     setCompany("");
     setRole("");
     setDate("");
     setStatus("Planned");
   };
 
-  const updateStatus = (id: string, nextStatus: string) => {
+  const updateStatus = async (id: string, nextStatus: string) => {
+    await fetch("/api/interview-tracker", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: nextStatus }),
+    });
+
     setItems((current) =>
       current.map((item) =>
         item.id === id ? { ...item, status: nextStatus } : item
       )
     );
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-6xl px-4 py-10 text-center">Loading your interview planner…</div>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-3xl font-semibold">Login to save your interviews</h1>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">
+            Sign in to persist your interview schedule and come back to it from any device.
+          </p>
+          <Link href="/login" className="mt-6 inline-flex rounded-full bg-blue-600 px-6 py-3 text-white">
+            Log in
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -105,6 +151,7 @@ export default function InterviewTrackerPage() {
               >
                 Add interview
               </button>
+              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             </div>
           </div>
 
