@@ -4,17 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import ChatInput from "../../components/ChatInput";
 import ChatMessage from "../../components/ChatMessage";
 import SessionsSidebar from "../../components/SessionsSidebar";
+import { useAuth } from "../../components/AuthContext";
 import { trackChatSend } from "../../lib/analytics";
 import { ChatHistoryItem, ChatMode, ChatResponse } from "../../lib/types";
+import {
+  AI_TUTOR_CHAT_KEY,
+  AI_TUTOR_MODE_KEY,
+  AI_TUTOR_RESPONSE_KEY,
+  getPersistedKey,
+  getUserStorageKey,
+} from "../../lib/aiTutorStorage";
 
-const STORAGE_KEY = "ai-tutor-chat-history";
-const RESPONSE_KEY = "ai-tutor-last-response";
-const MODE_KEY = "ai-tutor-mode";
+const STORAGE_KEY = AI_TUTOR_CHAT_KEY;
+const RESPONSE_KEY = AI_TUTOR_RESPONSE_KEY;
+const MODE_KEY = AI_TUTOR_MODE_KEY;
 
 const introText =
   "Practice English answers, get correction feedback, and receive one interview-style question.";
 
 export default function AITutorPage() {
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<ChatMode>("grammar");
   const [loading, setLoading] = useState(false);
@@ -23,10 +32,20 @@ export default function AITutorPage() {
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  const userKey = getUserStorageKey(user?.email);
+
   useEffect(() => {
-    const savedHistory = window.localStorage.getItem(STORAGE_KEY);
-    const savedResponse = window.localStorage.getItem(RESPONSE_KEY);
-    const savedMode = window.localStorage.getItem(MODE_KEY) as ChatMode | null;
+    if (!userKey) {
+      setChatHistory([]);
+      setResponse(null);
+      setError("");
+      setMessage("");
+      return;
+    }
+
+    const savedHistory = window.localStorage.getItem(getPersistedKey(STORAGE_KEY, userKey));
+    const savedResponse = window.localStorage.getItem(getPersistedKey(RESPONSE_KEY, userKey));
+    const savedMode = window.localStorage.getItem(getPersistedKey(MODE_KEY, userKey)) as ChatMode | null;
 
     if (savedHistory) {
       try {
@@ -47,27 +66,31 @@ export default function AITutorPage() {
     if (savedMode && ["grammar", "interview", "behavioral"].includes(savedMode)) {
       setMode(savedMode);
     }
-  }, []);
+  }, [userKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory));
-  }, [chatHistory]);
+    if (!userKey) return;
+    window.localStorage.setItem(getPersistedKey(STORAGE_KEY, userKey), JSON.stringify(chatHistory));
+  }, [chatHistory, userKey]);
 
   useEffect(() => {
+    if (!userKey) return;
+
     if (response) {
-      window.localStorage.setItem(RESPONSE_KEY, JSON.stringify(response));
+      window.localStorage.setItem(getPersistedKey(RESPONSE_KEY, userKey), JSON.stringify(response));
     } else {
-      window.localStorage.removeItem(RESPONSE_KEY);
+      window.localStorage.removeItem(getPersistedKey(RESPONSE_KEY, userKey));
     }
-  }, [response]);
+  }, [response, userKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(MODE_KEY, mode);
-  }, [mode]);
+    if (!userKey) return;
+    window.localStorage.setItem(getPersistedKey(MODE_KEY, userKey), mode);
+  }, [mode, userKey]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
@@ -114,8 +137,11 @@ export default function AITutorPage() {
     setResponse(null);
     setError("");
     setMessage("");
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem(RESPONSE_KEY);
+
+    if (userKey) {
+      window.localStorage.removeItem(getPersistedKey(STORAGE_KEY, userKey));
+      window.localStorage.removeItem(getPersistedKey(RESPONSE_KEY, userKey));
+    }
   };
 
   return (
@@ -188,6 +214,7 @@ export default function AITutorPage() {
                   setChatHistory(messages);
                   setResponse(resp);
                 }}
+                userKey={userKey}
               />
             </section>
 
