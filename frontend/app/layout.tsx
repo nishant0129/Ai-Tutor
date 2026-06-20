@@ -35,7 +35,7 @@ export default function RootLayout({
           <header className="border-b border-slate-200 bg-white/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
             <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
               <a href="/" className="text-lg font-bold">
-                AI Tutor
+                Career Prep
               </a>
               <div>
                 <UserMenu />

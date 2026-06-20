@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const portalSections = [
   {
-    title: "AI Tutor",
+    title: "AI Coaching",
     description: "Practice English answers and interview coaching with the AI chat module.",
     href: "/ai-tutor",
   },
@@ -64,7 +64,7 @@ export default function Home() {
               All your career preparation tools in one homepage.
             </h1>
             <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-400">
-              Access the AI Tutor, resume builder, interview tracker, job search dashboard, study planner, and analytics directly from the home page.
+              Access AI coaching, resume building, interview tracking, job search, study planning, and analytics directly from the home page.
             </p>
           </div>
         </section>
@@ -107,10 +107,10 @@ export default function Home() {
           <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-3xl font-semibold">Use the portal</h2>
             <p className="mt-4 text-slate-600 dark:text-slate-400">
-              Your home page now surfaces every module with a direct call to action. Start with the AI Tutor to practice answers, then use the resume builder and tracker to turn practice into results.
+              Your home page now surfaces every module with a direct call to action. Start with career coaching to practice answers, then use the resume builder and tracker to turn practice into results.
             </p>
             <div className="mt-8 space-y-3 text-sm text-slate-500 dark:text-slate-400">
-              <p>• AI Tutor chat for live coaching and feedback.</p>
+              <p>• AI coaching for live practice and feedback.</p>
               <p>• Interview tracker to keep your rounds organized.</p>
               <p>• Resume builder to write and preview your profile.</p>
               <p>• Job search dashboard to capture roles and offer status.</p>
