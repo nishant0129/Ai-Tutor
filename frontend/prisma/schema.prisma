@@ -59,5 +59,7 @@ model Resume {
   summary    String
   skills     String
   experience String
+  jobTarget  String?
+  style      String?
   updatedAt  DateTime @updatedAt
 }

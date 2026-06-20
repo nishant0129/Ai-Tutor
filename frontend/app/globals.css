@@ -46,3 +46,51 @@ select {
   background: #bfdbfe;
   color: #0f172a;
 }
+
+.resume-preview-card h4 {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .resume-preview-card,
+  .resume-preview-card * {
+    color: #111 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: #d1d5db !important;
+  }
+
+  .resume-preview-card {
+    background: #fff !important;
+    border: none !important;
+    margin: 0;
+    padding: 1.125rem !important;
+    width: 100%;
+  }
+
+  .resume-preview-card h3,
+  .resume-preview-card h4,
+  .resume-preview-card p {
+    color: #111 !important;
+  }
+
+  .resume-preview-card .inline-flex {
+    border: 1px solid #d1d5db !important;
+    background: #f8fafc !important;
+  }
+
+  main,
+  section {
+    background: #fff !important;
+  }
+}

@@ -11,8 +11,16 @@ export default function ResumeBuilderPage() {
   const [summary, setSummary] = useState("");
   const [skills, setSkills] = useState("");
   const [experience, setExperience] = useState("");
-  const [status, setStatus] = useState("");
+  const [jobTarget, setJobTarget] = useState("");
+  const [style, setStyle] = useState("Classic");
   const [message, setMessage] = useState("");
+
+  const previewClassName =
+    style === "Modern"
+      ? "border-l-4 border-blue-600 bg-white/95 shadow-sm"
+      : style === "Professional"
+      ? "border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+      : "border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950";
 
   useEffect(() => {
     if (loading || !user) return;
@@ -30,6 +38,8 @@ export default function ResumeBuilderPage() {
         setSummary(data.resume.summary || "");
         setSkills(data.resume.skills || "");
         setExperience(data.resume.experience || "");
+        setJobTarget(data.resume.jobTarget || "");
+        setStyle(data.resume.style || "Classic");
       }
     }
 
@@ -42,7 +52,7 @@ export default function ResumeBuilderPage() {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, title, summary, skills, experience }),
+      body: JSON.stringify({ name, title, summary, skills, experience, jobTarget, style }),
     });
 
     if (!response.ok) {
@@ -88,16 +98,25 @@ export default function ResumeBuilderPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-4">
+          <div className="no-print rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <h2 className="text-xl font-semibold">Resume details</h2>
-              <button
-                type="button"
-                onClick={saveResume}
-                className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-              >
-                Save resume
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={saveResume}
+                  className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                >
+                  Save resume
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                >
+                  Download PDF
+                </button>
+              </div>
             </div>
             <div className="mt-5 space-y-4">
               <input
@@ -119,6 +138,24 @@ export default function ResumeBuilderPage() {
                 rows={4}
                 className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
+              <input
+                value={jobTarget}
+                onChange={(e) => setJobTarget(e.target.value)}
+                placeholder="Target role or industry"
+                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Resume style</span>
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                >
+                  <option>Classic</option>
+                  <option>Modern</option>
+                  <option>Professional</option>
+                </select>
+              </label>
               <textarea
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
@@ -139,21 +176,29 @@ export default function ResumeBuilderPage() {
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-xl font-semibold">Resume preview</h2>
-            <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-950">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{name || "Your Name"}</h3>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{title || "Professional Title"}</p>
-              <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700 dark:text-slate-200">
-                <div>
-                  <h4 className="font-semibold">Summary</h4>
-                  <p>{summary || "Write a short summary about your strengths, experience, and goals."}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Skills</h4>
-                  <p>{skills || "List key skills separated by commas."}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Experience</h4>
-                  <p>{experience || "Describe one or two key roles to highlight your background."}</p>
+            <div className={`mt-5 rounded-3xl p-6 ${previewClassName} resume-preview-card`}>
+              <div className="flex flex-col gap-3">
+                <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{name || "Your Name"}</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{title || "Professional Title"}</p>
+                {jobTarget ? (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Target role: {jobTarget}</p>
+                ) : null}
+                <p className="mt-2 inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                  {style} style resume
+                </p>
+                <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <div>
+                    <h4 className="font-semibold">Summary</h4>
+                    <p>{summary || "Write a short summary about your strengths, experience, and goals."}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Skills</h4>
+                    <p>{skills || "List key skills separated by commas."}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Experience</h4>
+                    <p>{experience || "Describe one or two key roles to highlight your background."}</p>
+                  </div>
                 </div>
               </div>
             </div>

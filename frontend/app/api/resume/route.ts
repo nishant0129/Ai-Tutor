@@ -8,6 +8,8 @@ type RequestBody = {
   summary?: string;
   skills?: string;
   experience?: string;
+  jobTarget?: string;
+  style?: string;
 };
 
 async function getUserIdFromToken() {
@@ -37,15 +39,15 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json()) as RequestBody;
-  const { name, title, summary, skills, experience } = body;
+  const { name, title, summary, skills, experience, jobTarget, style } = body;
   if (!name || !title || !summary || !skills || !experience) {
     return NextResponse.json({ error: "Missing resume fields." }, { status: 400 });
   }
 
   const resume = await prisma.resume.upsert({
     where: { userId },
-    update: { name, title, summary, skills, experience },
-    create: { userId, name, title, summary, skills, experience },
+    update: { name, title, summary, skills, experience, jobTarget, style },
+    create: { userId, name, title, summary, skills, experience, jobTarget, style },
   });
 
   return NextResponse.json({ resume });
