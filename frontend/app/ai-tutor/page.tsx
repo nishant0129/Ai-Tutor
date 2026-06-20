@@ -22,6 +22,27 @@ const MODE_KEY = AI_TUTOR_MODE_KEY;
 const introText =
   "Practice English answers, get correction feedback, and receive one interview-style question.";
 
+const modeOptions: { value: ChatMode; title: string; description: string; emoji: string }[] = [
+  {
+    value: "grammar",
+    title: "Grammar Practice",
+    description: "Fix mistakes and improve phrasing.",
+    emoji: "✍️",
+  },
+  {
+    value: "interview",
+    title: "Interview Prep",
+    description: "Answer common interview questions.",
+    emoji: "🎙️",
+  },
+  {
+    value: "behavioral",
+    title: "Behavioral Feedback",
+    description: "Practice STAR-style examples.",
+    emoji: "💬",
+  },
+];
+
 export default function AITutorPage() {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
@@ -30,6 +51,25 @@ export default function AITutorPage() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [error, setError] = useState("");
+
+  const resultLabel =
+    mode === "interview"
+      ? "Answer"
+      : mode === "behavioral"
+      ? "Feedback"
+      : "Correction";
+  const explanationLabel =
+    mode === "interview"
+      ? "Why it works"
+      : mode === "behavioral"
+      ? "Improvement note"
+      : "Explanation";
+  const questionLabel =
+    mode === "interview"
+      ? "Follow-up interview question"
+      : mode === "behavioral"
+      ? "Follow-up behavioral question"
+      : "Practice question";
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const userKey = getUserStorageKey(user?.email);
@@ -118,7 +158,7 @@ export default function AITutorPage() {
       const data = (await res.json()) as ChatResponse;
       setResponse(data);
 
-      const assistantText = `Correction: ${data.correction}\nExplanation: ${data.explanation}\nQuestion: ${data.question}`;
+      const assistantText = `${resultLabel}: ${data.correction}\n${explanationLabel}: ${data.explanation}\n${questionLabel}: ${data.question}`;
       setChatHistory([...newHistory, { role: "assistant", text: assistantText }]);
       trackChatSend(mode, 2);
       setMessage("");
@@ -158,6 +198,29 @@ export default function AITutorPage() {
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
               {introText}
             </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            {modeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setMode(option.value)}
+                className={`rounded-3xl border p-5 text-left transition hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-950 ${
+                  mode === option.value
+                    ? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-slate-900"
+                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+                }`}
+              >
+                <div className="flex items-center gap-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  <span>{option.emoji}</span>
+                  {option.title}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  {option.description}
+                </p>
+              </button>
+            ))}
           </div>
         </section>
 
@@ -231,19 +294,19 @@ export default function AITutorPage() {
               ) : response ? (
                 <div className="space-y-5 mt-6">
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Correction</div>
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{resultLabel}</div>
                     <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
                       {response.correction}
                     </p>
                   </div>
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Explanation</div>
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{explanationLabel}</div>
                     <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
                       {response.explanation}
                     </p>
                   </div>
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Interview question</div>
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{questionLabel}</div>
                     <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
                       {response.question}
                     </p>
