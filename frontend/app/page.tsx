@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import ChatInput from "../components/ChatInput";
 import ChatMessage from "../components/ChatMessage";
+import SessionsSidebar from "../components/SessionsSidebar";
 import { ChatHistoryItem, ChatMode, ChatResponse } from "../lib/types";
+
+const STORAGE_KEY = "ai-tutor-chat-history";
+const RESPONSE_KEY = "ai-tutor-last-response";
+const MODE_KEY = "ai-tutor-mode";
 
 const introText =
   "Practice English answers, get correction feedback, and receive one interview-style question.";
@@ -18,8 +23,50 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const savedHistory = window.localStorage.getItem(STORAGE_KEY);
+    const savedResponse = window.localStorage.getItem(RESPONSE_KEY);
+    const savedMode = window.localStorage.getItem(MODE_KEY) as ChatMode | null;
+
+    if (savedHistory) {
+      try {
+        setChatHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error("Failed to restore chat history:", error);
+      }
+    }
+
+    if (savedResponse) {
+      try {
+        setResponse(JSON.parse(savedResponse));
+      } catch (error) {
+        console.error("Failed to restore last response:", error);
+      }
+    }
+
+    if (savedMode && ["grammar", "interview", "behavioral"].includes(savedMode)) {
+      setMode(savedMode);
+    }
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory));
+  }, [chatHistory]);
+
+  useEffect(() => {
+    if (response) {
+      window.localStorage.setItem(RESPONSE_KEY, JSON.stringify(response));
+    } else {
+      window.localStorage.removeItem(RESPONSE_KEY);
+    }
+  }, [response]);
+
+  useEffect(() => {
+    window.localStorage.setItem(MODE_KEY, mode);
+  }, [mode]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
@@ -65,6 +112,8 @@ export default function Home() {
     setResponse(null);
     setError("");
     setMessage("");
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(RESPONSE_KEY);
   };
 
   return (
@@ -128,43 +177,56 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-semibold">Latest coaching result</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Corrections, explanations, and a question appear here after each submission.
-            </p>
+          <div className="space-y-6">
+            <section className="rounded-[1rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <SessionsSidebar
+                currentMessages={chatHistory}
+                currentResponse={response}
+                onLoad={(messages, resp) => {
+                  setChatHistory(messages);
+                  setResponse(resp);
+                }}
+              />
+            </section>
 
-            {error ? (
-              <div className="mt-6 rounded-3xl border border-red-300 bg-red-50 p-5 text-sm text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
-                {error}
-              </div>
-            ) : response ? (
-              <div className="space-y-5 mt-6">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Correction</div>
-                  <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
-                    {response.correction}
-                  </p>
+            <section className="rounded-[1rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-xl font-semibold">Latest coaching result</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Corrections, explanations, and a question appear here after each submission.
+              </p>
+
+              {error ? (
+                <div className="mt-6 rounded-3xl border border-red-300 bg-red-50 p-5 text-sm text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+                  {error}
                 </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Explanation</div>
-                  <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
-                    {response.explanation}
-                  </p>
+              ) : response ? (
+                <div className="space-y-5 mt-6">
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Correction</div>
+                    <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
+                      {response.correction}
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Explanation</div>
+                    <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
+                      {response.explanation}
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Interview question</div>
+                    <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
+                      {response.question}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-                  <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Interview question</div>
-                  <p className="mt-2 text-base leading-7 text-slate-900 dark:text-slate-100">
-                    {response.question}
-                  </p>
+              ) : (
+                <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400">
+                  No response yet. Send a message to see suggestions from the AI coach.
                 </div>
-              </div>
-            ) : (
-              <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400">
-                No response yet. Send a message to see suggestions from the AI coach.
-              </div>
-            )}
-          </section>
+              )}
+            </section>
+          </div>
         </div>
       </div>
     </main>
